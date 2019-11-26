@@ -1,5 +1,6 @@
 """
-Create and modify SQLite database.
+Create and modify SQLite database. Only needs to be used in the first instance to create the database. Hence it is not
+imported in main.py
 """
 from sqlalchemy.orm import sessionmaker
 import database_models

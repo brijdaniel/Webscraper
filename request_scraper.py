@@ -1,3 +1,8 @@
+"""
+Alternative scraping approach not using Selenium, just using python's requests module.
+Doesn't work, but is a good place to start to see the initial server response to the GET request.
+"""
+
 from bs4 import BeautifulSoup
 import requests
 

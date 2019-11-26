@@ -5,13 +5,14 @@ Define classes used for SQLite database construction.
 import sqlalchemy as db
 from sqlalchemy.ext.declarative import declarative_base
 
-# Create Base object to inherit from for all defined database models
+# Create SQL Base object to inherit from for all defined database models
 Base = declarative_base()
 
 
 class __Property:
     """
-    Abstract base class for representing a property. Defines common attributes used in the database.
+    Abstract base class for representing a property. Defines common attributes used by different property types,
+    i.e. sold properties, properties for sale, properties for rent etc.
     """
 
     address = db.Column(db.String, primary_key=True)
@@ -34,5 +35,9 @@ class SoldProperty(Base, __Property):
     date_sold = db.Column(db.Date)
 
     def __repr__(self):
+        """
+        Modify the print output format to be more user friendly
+        :return: str representing object data
+        """
         return '<Sold Property (address={}, suburb={}, price={}, date sold={}, land size={}, bedrooms={}, bathrooms={}, car spaces={}, property type={}>'.format(
             self.address, self.suburb, self.price, self.date_sold, self.land_size, self.bedrooms, self.bathrooms, self.car_spaces, self.property_type)

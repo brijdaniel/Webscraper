@@ -1,3 +1,7 @@
+"""
+Parse scraped html and extract certain data, depending on what the source html was.
+"""
+
 import re
 from datetime import datetime
 from bs4 import BeautifulSoup
