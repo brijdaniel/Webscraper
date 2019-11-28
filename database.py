@@ -9,11 +9,15 @@ import database_models
 class Database:
     """
     Class for interacting with the SQLite database.
+
+    :param database_name: Name of the database to create (str)
     """
 
-    def __init__(self):
+    def __init__(self, database_name='realestate_database.db'):
         # Connect to database called 'realestate_database.db' located in current directory
-        self.engine = database_models.db.create_engine('sqlite:///realestate_database.db')
+        self.database_name = database_name
+        self.engine = database_models.db.create_engine('sqlite:///' + self.database_name)
+        # TODO need to find the source of Could not parse rfc1738 URL from string error
 
         # Map database models to database schema
         database_models.Base.metadata.create_all(self.engine)

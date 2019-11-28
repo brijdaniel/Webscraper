@@ -9,40 +9,119 @@ import pandas
 import numpy
 
 
-def parse_sold(html):
+class HTMLParser:
     """
-    Parses html of Sold properties and extracts Address, Price, Date Sold, Land Size, Bedrooms, Bathrooms, Car Spaces
-    and Property Type. Returns this data in a pandas dataframe with those column headings.
-
-    :param html: Source HTML from https://www.realestate.com.au/sold/in-sa/list-1 or similar search
-    :return: Pandas dataframe of results
+    Class to create HTML parser, which has methods to parse different types of data (e.g. sold, current listings etc),
+    but always automatically extracts data to populate the 'Property' table in the SQLite database.
     """
 
-    # Load html content
-    content = BeautifulSoup(open(html), 'html.parser')
+    def __init__(self, html):
+        """
+        :param html: Source HTML from realestate.com.au
+        """
 
-    # Create dataframe to store scraped data
-    column_labels = ['Address', 'Suburb', 'Price', 'Date_Sold', 'Land_Size', 'Bedrooms', 'Bathrooms', 'Car_Spaces', 'Property_Type']
-    df = pandas.DataFrame(columns=column_labels)
+        # Load html content
+        self.soup = BeautifulSoup(open(html), 'html.parser')
 
-    # Locate each property in results, loop through to extract data
-    for residential_property in content.findAll('article', attrs={"data-testid": "ResidentialCard"}):
+    def parse_data(self, *args):
+        """
+        Main method (static) of HTMLParser object. Parses input HTML, extracts property data and then extracts specific data
+        depending on HTML source. Arguments (*args) are used to specify what source the data is from, and
+        therefore call the appropriate parsing methods. Accepted args are: sold, rent, listed. TODO add functionality for other kwargs
+
+        :param self: Gives access to the HTML soup
+        :param args: String specifying HTML data source and which parser to use
+        :return: Two pandas dataframes, first being the Property data table, second being the specific source data table
+        """
+
+        # Create dataframes to store parsed data TODO this should be contained in the parse_propery etc methods somehow
+        property_columns = ['Address', 'Suburb', 'Land_Size', 'Bedrooms', 'Bathrooms', 'Car_Spaces', 'Property_Type']
+        sold_columns = ['Price', 'Date_Sold']
+        property_df = pandas.DataFrame(columns=property_columns)
+        sold_df = pandas.DataFrame(columns=sold_columns)
+
+        # Locate each property in results, loop through to extract data
+        for self.property_data in self.soup.findAll('article', attrs={"data-testid": "ResidentialCard"}):
+            property_data = self.__parse_property(self.property_data)
+            property_df = property_df.append(property_data, ignore_index=True)
+
+            if args == 'sold':
+                sold_data = self.__parse_sold(self.property_data)
+                sold_df = sold_df.append(sold_data, ignore_index=True)
+
+        return property_df, sold_df if not sold_df.empty else None  # TODO not sure if the condition can be applied like this
+
+    @staticmethod
+    def __parse_property(property_data):
+        """
+        Private static method to extract property data from soup contents. Returns data in a dict ready to be appended to a dataframe.
+
+        :param property_data: Data returned from loop through HTML soup
+        :return: Dict of extracted data
+        """
+
         # Find address and suburb. Note suburb is left in the address string too to ensure addresses are unique,
         # and can therefore be used as the primary key for each table in the database
         # .contents extracts the price as a list of length 1, so [0] accesses the actual value
-        address = residential_property.find('span', attrs={'class': ''}).contents[0]
+        address = property_data.find('span', attrs={'class': ''}).contents[0]
         suburb = address.split(', ')[1]
+
+        # Find land size, bedrooms, bathrooms, car spaces and property type if given
+        try:
+            # Convert from 'bs4.element.NavigableString' to int
+            land_size = int(property_data.find('span', attrs={'class': 'property-size__icon property-size__building'}).contents[0])
+        except AttributeError:
+            land_size = numpy.NaN
+        try:
+            bedrooms = int(property_data.find('span', attrs={
+                'class': 'general-features__icon general-features__beds'}).contents[0])
+        except AttributeError:
+            bedrooms = numpy.NaN
+        try:
+            bathrooms = int(property_data.find('span', attrs={
+                'class': 'general-features__icon general-features__baths'}).contents[0])
+        except AttributeError:
+            bathrooms = numpy.NaN
+        try:
+            car_spaces = int(property_data.find('span', attrs={
+                'class': 'general-features__icon general-features__cars'}).contents[0])
+        except AttributeError:
+            car_spaces = numpy.NaN
+        try:
+            property_type = property_data.find('span', attrs={'class': 'residential-card__property-type'}).contents[0]
+        except AttributeError:
+            property_type = numpy.NaN
+
+        # Put this data into a row of the df
+        data = {'Address': address,
+                'Suburb': suburb,
+                'Land_Size': land_size,
+                'Bedrooms': bedrooms,
+                'Bathrooms': bathrooms,
+                'Car_Spaces': car_spaces,
+                'Property_Type': property_type}
+
+        return data
+
+    @staticmethod
+    def __parse_sold(property_data):
+        """
+        Private static method to extract sold data from soup contents. Returns data in a dict ready to be appended to a dataframe.
+
+        :param property_data: Data returned from loop through HTML soup
+        :return: Dict of extracted data
+        """
 
         # Find property price by searching for <span class='property-price'>$xxx,xxx</span>
         # then convert this price string into an in, removing the $ and , chars
-        price = residential_property.find('span', attrs={'class': 'property-price'}).contents[0]
+        price = property_data.find('span', attrs={'class': 'property-price'}).contents[0]
         price = int(re.sub(r'[^\d.]', '', price))
 
         # Find date sold - since this span that contains the date sold has no class or other attribute to filter it by,
         # we must get all spans, then search through them individually for the phrase 'Sold on'
         # Then split the string at 'Sold on ' and '<date>' to extract just the date
         date_sold = numpy.NaN
-        spans = residential_property.find_all('span')
+        spans = property_data.find_all('span')
         span_contents = [span.get_text() for span in spans]
         for span in span_contents:
             if re.search('^Sold on ', span):
@@ -51,46 +130,13 @@ def parse_sold(html):
         # Process this date string into proper datetime object
         date_sold = datetime.strptime(date_sold, '%d %b %Y').date()
 
-        # Find land size, bedrooms, bathrooms, car spaces and property type if given
-        try:
-            # Convert from 'bs4.element.NavigableString' to int
-            land_size = int(residential_property.find('span', attrs={'class': 'property-size__icon property-size__building'}).contents[0])
-        except AttributeError:
-            land_size = numpy.NaN
-        try:
-            bedrooms = int(residential_property.find('span', attrs={'class': 'general-features__icon general-features__beds'}).contents[0])
-        except AttributeError:
-            bedrooms = numpy.NaN
-        try:
-            bathrooms = int(residential_property.find('span', attrs={'class': 'general-features__icon general-features__baths'}).contents[0])
-        except AttributeError:
-            bathrooms = numpy.NaN
-        try:
-            car_spaces = int(residential_property.find('span', attrs={'class': 'general-features__icon general-features__cars'}).contents[0])
-        except AttributeError:
-            car_spaces = numpy.NaN
-        try:
-            property_type = residential_property.find('span', attrs={'class': 'residential-card__property-type'}).contents[0]
-        except AttributeError:
-            property_type = numpy.NaN
-
         # Put this data into a row of the df
-        data = {'Address': address,
-                'Suburb': suburb,
-                'Price': price,
-                'Date_Sold': date_sold,
-                'Land_Size': land_size,
-                'Bedrooms': bedrooms,
-                'Bathrooms': bathrooms,
-                'Car_Spaces': car_spaces,
-                'Property_Type': property_type}
+        data = {'Price': price, 'Date_Sold': date_sold}
 
-        df = df.append(data, ignore_index=True)
-
-    return df
+        return data
 
 
 if __name__ == '__main__':
     web_page = './page2.html'
-    results = parse_sold(web_page)
-    print(results)
+    # results = parse_sold(web_page)
+    # print(results)
