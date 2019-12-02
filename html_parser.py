@@ -27,7 +27,7 @@ class HTMLParser:
         """
         Main method (static) of HTMLParser object. Parses input HTML, extracts property data and then extracts specific data
         depending on HTML source. Arguments (*args) are used to specify what source the data is from, and
-        therefore call the appropriate parsing methods. Accepted args are: sold, rent, listed. TODO add functionality for other kwargs
+        therefore call the appropriate parsing methods. Accepted args are: sold, rent, listed. TODO add functionality for other *args
 
         :param self: Gives access to the HTML soup
         :param args: String specifying HTML data source and which parser to use

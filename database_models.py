@@ -5,8 +5,9 @@ TODO need to link foreign keys between tables
 """
 
 import sqlalchemy as db
+from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, relationship
 
 
 # Create SQL Base object to inherit from for all defined database models
@@ -52,6 +53,11 @@ class Property(Base):
     car_spaces = db.Column(db.Integer)
     property_type = db.Column(db.String)
 
+    # Foreign Key relationships
+    sold_history = relationship('SoldHistory', back_populates='property')
+    rental_history = relationship('RentalHistory', back_populates='property')
+    current_listings = relationship('CurrentListings', back_populates='property')
+
     def __repr__(self):
         """
         Modify the print output format to be more user friendly
@@ -73,6 +79,10 @@ class SoldHistory(Base):
     date_sold = db.Column(db.Date)
     price = db.Column(db.Integer)
 
+    # Link Sold data to property table via address
+    address = db.Column(db.String, ForeignKey('Property.address'))
+    property = relationship('Property', back_populates='sold_history')
+
 
 class RentalHistory(Base):
     """
@@ -85,6 +95,10 @@ class RentalHistory(Base):
     index = db.Column(db.Integer, primary_key=True)
     date_rented = db.Column(db.Date)
     price = db.Column(db.Integer)
+
+    # Link Rental data to property table via address
+    address = db.Column(db.String, ForeignKey('Property.address'))
+    property = relationship('Property', back_populates='rental_history')
 
 
 class CurrentListings(Base):
@@ -99,3 +113,7 @@ class CurrentListings(Base):
 
     index = db.Column(db.Integer, primary_key=True)
     asking_price = db.Column(db.Integer)
+
+    # Link current listings to property table via address
+    address = db.Column(db.String, ForeignKey('Property.address'))
+    property = relationship('Property', back_populates='current_listings')
