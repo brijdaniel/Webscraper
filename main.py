@@ -16,19 +16,21 @@ property_df, sold_df = parser.parse_data('sold')
 
 # Create engine for SQLite database
 database_name = 'realestate_database.db'
-engine = database_models.db.create_engine(database_name)
+# engine = database_models.db.create_engine(database_name)  # This is left over from before the database_models.Database() class was defined
+db = database_models.Database(database_name=database_name)
 
 # Add dataframe to database - below line fails when duplicate entries occur, hence iterate through df manually which is slow...
+# Optimise below code later on
 # sold_properties_df.to_sql('Sold Property', con=engine, if_exists='append', index=False)
 for i in range(len(property_df)):
     try:
-        property_df.iloc[i:i+1].to_sql(name='Sold Property', if_exists='append', con=engine, index=False)
+        property_df.iloc[i:i+1].to_sql(name='Sold Property', if_exists='append', con=db.engine, index=False)
     except IntegrityError:
         pass
 
 if sold_df:
     for i in range(len(sold_df)):
         try:
-            sold_df.iloc[i:i+1].to_sql(name='Sold Property', if_exists='append', con=engine, index=False)
+            sold_df.iloc[i:i+1].to_sql(name='Sold Property', if_exists='append', con=db.engine, index=False)
         except IntegrityError:
             pass
