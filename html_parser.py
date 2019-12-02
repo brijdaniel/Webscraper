@@ -45,8 +45,9 @@ class HTMLParser:
             property_data = self.__parse_property(self.property_data)
             property_df = property_df.append(property_data, ignore_index=True)
 
-            if args == 'sold':
+            if 'sold' in args:
                 sold_data = self.__parse_sold(self.property_data)
+                # TODO need to link the address here so the foreign key value can populate!
                 sold_df = sold_df.append(sold_data, ignore_index=True)
 
         return property_df, sold_df if not sold_df.empty else None  # TODO not sure if the condition can be applied like this

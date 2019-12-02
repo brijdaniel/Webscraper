@@ -1,7 +1,5 @@
 """
 Define classes used for SQLite database construction.
-
-TODO need to link foreign keys between tables
 """
 
 import sqlalchemy as db
@@ -25,7 +23,6 @@ class Database:
         # Connect to database called 'realestate_database.db' located in current directory
         self.database_name = database_name
         self.engine = db.create_engine('sqlite:///' + self.database_name)
-        # TODO need to find the source of Could not parse rfc1738 URL from string error
 
         # Map database models to database schema
         Base.metadata.create_all(self.engine)
@@ -54,9 +51,9 @@ class Property(Base):
     property_type = db.Column(db.String)
 
     # Foreign Key relationships
-    sold_history = relationship('SoldHistory', back_populates='property')
-    rental_history = relationship('RentalHistory', back_populates='property')
-    current_listings = relationship('CurrentListings', back_populates='property')
+    sold_history = relationship('SoldHistory', order_by='SoldHistory.id', back_populates='property')
+    rental_history = relationship('RentalHistory', order_by='RentalHistory.id', back_populates='property')
+    current_listings = relationship('CurrentListings', order_by='CurrentListings.id', back_populates='property')
 
     def __repr__(self):
         """
@@ -72,6 +69,7 @@ class SoldHistory(Base):
     Class for defining the 'Sold History' table, which links the 'Property' table to previous sales data.
     This table is indexed by a unique primary key.
     """
+    # TODO need to implement rule that date_sold and address (from Property table) cannot duplicate
 
     __tablename__ = 'Sold History'
 
