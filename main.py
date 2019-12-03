@@ -5,13 +5,16 @@ Currently only works with html downloaded and stored locally in the project root
 """
 
 from sqlalchemy.exc import IntegrityError
-import html_parser, database_models
+import html_parser, database_models, scraper
 
-# Specify path to source html
-source_html = './page2.html'  # local html source in root directory
+# URL to scrape
+url = 'https://www.realestate.com.au/sold/in-henley+beach/list-1'
+
+# Get URL source HTML
+soup = scraper.scrape(url)  # './page2.html'  # local html source in root directory
 
 # Parse data
-parser = html_parser.HTMLParser(source_html)
+parser = html_parser.HTMLParser(soup)
 property_df, sold_df = parser.parse_data('sold')
 
 # Create engine for SQLite database

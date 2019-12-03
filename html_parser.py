@@ -15,19 +15,19 @@ class HTMLParser:
     but always automatically extracts data to populate the 'Property' table in the SQLite database.
     """
 
-    def __init__(self, html):
+    def __init__(self, soup):
         """
         :param html: Source HTML from realestate.com.au
         """
 
         # Load html content
-        self.soup = BeautifulSoup(open(html), 'html.parser')
+        self.soup = soup  # BeautifulSoup(html, 'html.parser')
 
     def parse_data(self, *args):
         """
         Main method (static) of HTMLParser object. Parses input HTML, extracts property data and then extracts specific data
         depending on HTML source. Arguments (*args) are used to specify what source the data is from, and
-        therefore call the appropriate parsing methods. Accepted args are: sold, rent, listed. TODO add functionality for other *args
+        therefore call the appropriate parsing methods. Accepted args are: sold, rent, listed.
 
         :param self: Gives access to the HTML soup
         :param args: String specifying HTML data source and which parser to use
@@ -49,6 +49,8 @@ class HTMLParser:
                 sold_data = self.__parse_sold(self.property_data)
                 sold_data['Address'] = property_data['Address']  # link the address so the foreign key value can populate
                 sold_df = sold_df.append(sold_data, ignore_index=True)
+
+            # TODO add functionality for other *args
 
         return property_df, sold_df if not sold_df.empty else None
 
