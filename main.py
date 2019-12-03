@@ -16,7 +16,6 @@ property_df, sold_df = parser.parse_data('sold')
 
 # Create engine for SQLite database
 database_name = 'realestate_database.db'
-# engine = database_models.db.create_engine(database_name)  # This is left over from before the database_models.Database() class was defined
 db = database_models.Database(database_name=database_name)
 
 # Add dataframe to database - below line fails when duplicate entries occur, hence iterate through df manually which is slow...

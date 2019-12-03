@@ -36,7 +36,7 @@ class HTMLParser:
 
         # Create dataframes to store parsed data TODO this should be contained in the parse_propery etc methods somehow
         property_columns = ['Address', 'Suburb', 'Land_Size', 'Bedrooms', 'Bathrooms', 'Car_Spaces', 'Property_Type']
-        sold_columns = ['Price', 'Date_Sold']
+        sold_columns = ['Price', 'Date_Sold', 'Address']
         property_df = pandas.DataFrame(columns=property_columns)
         sold_df = pandas.DataFrame(columns=sold_columns)
 
@@ -47,10 +47,10 @@ class HTMLParser:
 
             if 'sold' in args:
                 sold_data = self.__parse_sold(self.property_data)
-                # TODO need to link the address here so the foreign key value can populate!
+                sold_data['Address'] = property_data['Address']  # link the address so the foreign key value can populate
                 sold_df = sold_df.append(sold_data, ignore_index=True)
 
-        return property_df, sold_df if not sold_df.empty else None  # TODO not sure if the condition can be applied like this
+        return property_df, sold_df if not sold_df.empty else None
 
     @staticmethod
     def __parse_property(property_data):
