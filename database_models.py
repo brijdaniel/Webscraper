@@ -67,35 +67,36 @@ class Property(Base):
 class SoldHistory(Base):
     """
     Class for defining the 'Sold History' table, which links the 'Property' table to previous sales data.
-    This table is indexed by a unique primary key.
+    The date_sold and address (which is a foreign key to the 'Property' table) act as a composite primary
+    key for this table, ensuring that multiple entries of the same property sale do not exist by enforcing
+    that each data entry is a unique combination of address and date_sold
     """
     # TODO need to implement rule that date_sold and address (from Property table) cannot duplicate
 
     __tablename__ = 'Sold History'
 
-    index = db.Column(db.Integer, primary_key=True)
-    date_sold = db.Column(db.Date)
+    date_sold = db.Column(db.Date, primary_key=True)
     price = db.Column(db.Integer)
 
     # Link Sold data to property table via address
-    address = db.Column(db.String, ForeignKey('Property.address'))
+    address = db.Column(db.String, ForeignKey('Property.address'), primary_key=True)
     property = relationship('Property', back_populates='sold_history')
 
 
 class RentalHistory(Base):
     """
     Class for defining the 'Rental History' table, which links properties in the 'Property' table to previous
-    rental data. Table is indexed by a unique primary key.
+    rental data. Similar to the 'Sold History' table, this table's primary key is a composite of the date_rented
+    and address (foreign key to 'Property' table) attributes.
     """
 
     __tablename__ = 'Rental History'
 
-    index = db.Column(db.Integer, primary_key=True)
-    date_rented = db.Column(db.Date)
+    date_rented = db.Column(db.Date, primary_key=True)
     price = db.Column(db.Integer)
 
     # Link Rental data to property table via address
-    address = db.Column(db.String, ForeignKey('Property.address'))
+    address = db.Column(db.String, ForeignKey('Property.address'), primary_key=True)
     property = relationship('Property', back_populates='rental_history')
 
 
@@ -103,15 +104,15 @@ class CurrentListings(Base):
     """
     Class for defining the current listings table, which links entries in the 'Property' table to their current
     asking price, if the property is on the market. This is the most dynamic table as listings are constantly
-    changing. This table will need to be overwritten to ensure data is current. Table is indexed by a unique
-    primary key.
+    changing. This table will need to be overwritten to ensure data is current. The address (foreign key to 'Property'
+    table) is used as the primary key, as no property can be listed more than once.
     """
+    # TODO will need a way to erase old listings from this table
 
     __tablename__ = 'Current Listings'
 
-    index = db.Column(db.Integer, primary_key=True)
     asking_price = db.Column(db.Integer)
 
     # Link current listings to property table via address
-    address = db.Column(db.String, ForeignKey('Property.address'))
+    address = db.Column(db.String, ForeignKey('Property.address'), primary_key=True)
     property = relationship('Property', back_populates='current_listings')
