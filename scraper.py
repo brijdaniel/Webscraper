@@ -49,7 +49,7 @@ WebDriverWait(driver, 10)  # Wait 10s for some content to load
 driver.find_element_by_link_text('Sold').click()  # Find the Sold link and click on it
 WebDriverWait(driver, 10) # Wait 10s for some content to load
 driver.execute_script("document.getElementById('where').setAttribute('value', 'Henley Beach')")  # Use javascript to fill out form
-button = driver.find_element_by_xpath('/html/body/div[1]/div[1]/div[1]/form/div/div[1]/div/div/button')  # Find search button
+button = driver.find_element_by_class_name('rui-search-button')  # Find search button
 WebDriverWait(driver, 2)  # Wait a cuttla
 button.click()
 WebDriverWait(driver, 10) # Wait 10s for some content to load
