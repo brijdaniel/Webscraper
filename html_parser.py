@@ -15,13 +15,13 @@ class HTMLParser:
     but always automatically extracts data to populate the 'Property' table in the SQLite database.
     """
 
-    def __init__(self, soup):
+    def __init__(self, html):
         """
         :param html: Source HTML from realestate.com.au
         """
 
         # Load html content
-        self.soup = soup  # BeautifulSoup(html, 'html.parser')
+        self.soup = BeautifulSoup(html, 'html.parser')
 
     def parse_data(self, *args):
         """
@@ -74,6 +74,8 @@ class HTMLParser:
             # Convert from 'bs4.element.NavigableString' to int
             land_size = int(property_data.find('span', attrs={'class': 'property-size__icon property-size__building'}).contents[0])
         except AttributeError:
+            land_size = numpy.NaN
+        except ValueError:
             land_size = numpy.NaN
         try:
             bedrooms = int(property_data.find('span', attrs={
