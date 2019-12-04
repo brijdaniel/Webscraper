@@ -73,28 +73,26 @@ class HTMLParser:
         try:
             # Convert from 'bs4.element.NavigableString' to int
             land_size = int(property_data.find('span', attrs={'class': 'property-size__icon property-size__building'}).contents[0])
-        except AttributeError:
-            land_size = numpy.NaN
-        except ValueError:
+        except (AttributeError, ValueError):
             land_size = numpy.NaN
         try:
             bedrooms = int(property_data.find('span', attrs={
                 'class': 'general-features__icon general-features__beds'}).contents[0])
-        except AttributeError:
+        except (AttributeError, ValueError):
             bedrooms = numpy.NaN
         try:
             bathrooms = int(property_data.find('span', attrs={
                 'class': 'general-features__icon general-features__baths'}).contents[0])
-        except AttributeError:
+        except (AttributeError, ValueError):
             bathrooms = numpy.NaN
         try:
             car_spaces = int(property_data.find('span', attrs={
                 'class': 'general-features__icon general-features__cars'}).contents[0])
-        except AttributeError:
+        except (AttributeError, ValueError):
             car_spaces = numpy.NaN
         try:
             property_type = property_data.find('span', attrs={'class': 'residential-card__property-type'}).contents[0]
-        except AttributeError:
+        except (AttributeError, ValueError):
             property_type = numpy.NaN
 
         # Put this data into a row of the df
@@ -118,9 +116,12 @@ class HTMLParser:
         """
 
         # Find property price by searching for <span class='property-price'>$xxx,xxx</span>
-        # then convert this price string into an in, removing the $ and , chars
+        # then convert this price string into an int, removing the $ and , chars
         price = property_data.find('span', attrs={'class': 'property-price'}).contents[0]
-        price = int(re.sub(r'[^\d.]', '', price))
+        try:
+            price = int(re.sub(r'[^\d.]', '', price))
+        except (AttributeError, ValueError):
+            price = numpy.NaN
 
         # Find date sold - since this span that contains the date sold has no class or other attribute to filter it by,
         # we must get all spans, then search through them individually for the phrase 'Sold on'

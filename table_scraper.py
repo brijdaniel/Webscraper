@@ -14,4 +14,4 @@ if __name__ == '__main__':
     suburbs = table[0]['Suburb']
 
     # Output list of suburbs to csv file
-    suburbs.to_csv('./list_of_adelaide_suburbs', index=False)
+    suburbs.to_csv('./list_of_adelaide_suburbs.csv', index=False, header='Suburbs')
