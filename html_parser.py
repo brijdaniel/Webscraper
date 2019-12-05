@@ -47,12 +47,14 @@ class HTMLParser:
 
             if 'sold' in args:
                 sold_data = self.__parse_sold(self.property_data)
-                sold_data['Address'] = property_data['Address']  # link the address so the foreign key value can populate
-                sold_df = sold_df.append(sold_data, ignore_index=True)
+                # Make sure data returned is valid, otherwise skip this entry to df
+                if sold_data:
+                    sold_data['Address'] = property_data['Address']  # link the address so the foreign key value can populate
+                    sold_df = sold_df.append(sold_data, ignore_index=True)
 
             # TODO add functionality for other *args
 
-        return property_df, sold_df if not sold_df.empty else None
+        return property_df, sold_df
 
     @staticmethod
     def __parse_property(property_data):
@@ -73,26 +75,26 @@ class HTMLParser:
         try:
             # Convert from 'bs4.element.NavigableString' to int
             land_size = int(property_data.find('span', attrs={'class': 'property-size__icon property-size__building'}).contents[0])
-        except (AttributeError, ValueError):
+        except (AttributeError, ValueError, TypeError):
             land_size = numpy.NaN
         try:
             bedrooms = int(property_data.find('span', attrs={
                 'class': 'general-features__icon general-features__beds'}).contents[0])
-        except (AttributeError, ValueError):
+        except (AttributeError, ValueError, TypeError):
             bedrooms = numpy.NaN
         try:
             bathrooms = int(property_data.find('span', attrs={
                 'class': 'general-features__icon general-features__baths'}).contents[0])
-        except (AttributeError, ValueError):
+        except (AttributeError, ValueError, TypeError):
             bathrooms = numpy.NaN
         try:
             car_spaces = int(property_data.find('span', attrs={
                 'class': 'general-features__icon general-features__cars'}).contents[0])
-        except (AttributeError, ValueError):
+        except (AttributeError, ValueError, TypeError):
             car_spaces = numpy.NaN
         try:
             property_type = property_data.find('span', attrs={'class': 'residential-card__property-type'}).contents[0]
-        except (AttributeError, ValueError):
+        except (AttributeError, ValueError, TypeError):
             property_type = numpy.NaN
 
         # Put this data into a row of the df
@@ -120,8 +122,12 @@ class HTMLParser:
         price = property_data.find('span', attrs={'class': 'property-price'}).contents[0]
         try:
             price = int(re.sub(r'[^\d.]', '', price))
-        except (AttributeError, ValueError):
-            price = numpy.NaN
+            # If sold price is given as a range, eg '$1,250,000 - $1,500,000' then above expression will return
+            # '12500001500000', so assert we are getting reaslistic data, otherwise discard
+            assert price < 9999999
+        # If something is wrong with the price data then we discard this property
+        except (AttributeError, ValueError, TypeError, AssertionError):
+            return None
 
         # Find date sold - since this span that contains the date sold has no class or other attribute to filter it by,
         # we must get all spans, then search through them individually for the phrase 'Sold on'
@@ -134,7 +140,11 @@ class HTMLParser:
                 date_sold = re.split('^Sold on ', span)[1]
                 break
         # Process this date string into proper datetime object
-        date_sold = datetime.strptime(date_sold, '%d %b %Y').date()
+        try:
+            date_sold = datetime.strptime(date_sold, '%d %b %Y').date()
+        # As with price, if something is wrong with the date data then we discard this property
+        except (AttributeError, ValueError, TypeError):
+            return None
 
         # Put this data into a row of the df
         data = {'Price': price, 'Date_Sold': date_sold}

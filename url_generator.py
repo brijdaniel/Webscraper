@@ -29,3 +29,7 @@ def create_url_list(search_type):
         url_list.append(combined_url)
 
     return  url_list
+
+
+l = create_url_list('sold')
+print(l)

@@ -2,15 +2,17 @@
 Main interface for executing webscraper and building SQLite database.
 """
 import datetime
+from multiprocessing import Pool
 from sqlalchemy.exc import IntegrityError
 import html_parser, database_models, scraper, url_generator
 
-if __name__ == '__main__':
-    # Get list of sold suburb URLs
-    url_list = url_generator.create_url_list('sold')
+
+def build_database(url_list):
 
     # Iterate through list, searching one suburb at time
-    for suburb_url in url_list:
+    # Currently set to start at entry 33, which is where the code stopped last time
+    # Got up to Beverley, half of Hectorville needs doing, as well as Adelaide and North Adelaide
+    for suburb_url in url_list[34:]:
         # Unpack suburb from URL for debugging, probably a nicer way to do this
         suburb = (suburb_url.split('in-')[1]).split(',')[0]
 
@@ -59,3 +61,8 @@ if __name__ == '__main__':
             if break_flag:
                 break_flag = False
                 # break TODO uncomment this once full database baseline has been scraped
+
+
+if __name__ == '__main__':
+    # Get list of sold suburb URLs
+    url_list = url_generator.create_url_list('sold')
