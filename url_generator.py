@@ -25,11 +25,7 @@ def create_url_list(search_type):
     # Iterate through list of suburbs, replace spaces with + and generate URL format
     for suburb in suburb_list:
         suburb = suburb.replace(' ', '+')
-        combined_url = url_base + search_type +'/in-' +  suburb + ',+sa/list-'
+        combined_url = url_base + search_type + '/in-' + suburb + ',+sa/list-'
         url_list.append(combined_url)
 
-    return  url_list
-
-
-l = create_url_list('sold')
-print(l)
+    return url_list

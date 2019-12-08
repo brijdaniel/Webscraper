@@ -1,7 +1,9 @@
 """
 Define classes used for SQLite database construction.
+TODO Need to convert SQLite database to MySQL for multiprocessing
 """
 
+import pandas
 import sqlalchemy as db
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
@@ -33,6 +35,42 @@ class Database:
         # Create instance of Session object
         self.session = Session()
 
+    def output_csv(self):
+
+        #join_query = self.session.query(Property).join(SoldHistory)
+        #joined_table = self.session.execute(join_query).all()
+
+        # for prop, sold in self.session.query(Property).join(SoldHistory).filter(Property.address==SoldHistory.address).all():
+        #     print(prop)
+        #     print(sold)
+
+        # with open('dump.csv', 'wb') as out_file:
+        #     out_csv = csv.writer(out_file)
+        #     out_csv.writerow(joined_table.keys())
+        #     out_csv.writerows(joined_table)
+
+        # table = Table('Sold History', meta, autoload=True, autoload_with=self.engine)
+        # print(table)
+
+        #for prop, sold in self.session.query(Property, SoldHistory).filter(Property.address==SoldHistory.address).all():
+        cols = ['Address', 'Suburb', 'Price', 'Date Sold', 'Land_Size', 'Bedrooms', 'Bathrooms', 'Car_Spaces', 'Property_Type']
+        export_df = pandas.DataFrame(columns=cols)
+
+        for prop in self.session.query(SoldHistory).join(Property).all():
+            data = {'Address': prop.property.address,
+                    'Suburb': prop.property.suburb,
+                    'Price': prop.price,
+                    'Date Sold': prop.date_sold,
+                    'Land_Size': prop.property.land_size,
+                    'Bedrooms': prop.property.bedrooms,
+                    'Bathrooms': prop.property.bathrooms,
+                    'Car_Spaces': prop.property.car_spaces,
+                    'Property_Type': prop.property.property_type}
+
+            export_df = export_df.append(data, ignore_index=True)
+
+        export_df.to_excel('database_dump.xlsx', index=False)
+
 
 class Property(Base):
     """
@@ -51,9 +89,9 @@ class Property(Base):
     property_type = db.Column(db.String)
 
     # Foreign Key relationships
-    sold_history = relationship('SoldHistory', order_by='SoldHistory.id', back_populates='property')
-    rental_history = relationship('RentalHistory', order_by='RentalHistory.id', back_populates='property')
-    current_listings = relationship('CurrentListings', order_by='CurrentListings.id', back_populates='property')
+    sold_history = relationship('SoldHistory', order_by='SoldHistory.date_sold', back_populates='property')
+    rental_history = relationship('RentalHistory', order_by='RentalHistory.date_rented', back_populates='property')
+    current_listings = relationship('CurrentListings', order_by='CurrentListings.address', back_populates='property')
 
     def __repr__(self):
         """
@@ -116,3 +154,8 @@ class CurrentListings(Base):
     # Link current listings to property table via address
     address = db.Column(db.String, ForeignKey('Property.address'), primary_key=True)
     property = relationship('Property', back_populates='current_listings')
+
+
+if __name__ == '__main__':
+    db = Database()
+    db.output_csv()

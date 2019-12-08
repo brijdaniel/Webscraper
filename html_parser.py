@@ -69,7 +69,7 @@ class HTMLParser:
         # and can therefore be used as the primary key for each table in the database
         # .contents extracts the price as a list of length 1, so [0] accesses the actual value
         address = property_data.find('span', attrs={'class': ''}).contents[0]
-        suburb = address.split(', ')[1]
+        suburb = address.split(', ')[-1]
 
         # Find land size, bedrooms, bathrooms, car spaces and property type if given
         try:

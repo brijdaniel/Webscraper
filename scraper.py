@@ -2,6 +2,7 @@
 Web scraper engine to extract source html for input to html_parser().
 """
 
+from time import sleep
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 
@@ -16,7 +17,7 @@ def scrape(url):
 
     # Set up basic firefox profile
     profile = webdriver.FirefoxProfile()
-    profile.set_preference("general.useragent.override","Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:70.0) Gecko/20100101 Firefox/70.0")
+    profile.set_preference("general.useragent.override","Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:71.0) Gecko/20100101 Firefox/70.0")
     profile.set_preference("browser.privatebrowsing.autostart", True)
     profile.update_preferences()
 
