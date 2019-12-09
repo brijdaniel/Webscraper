@@ -35,27 +35,13 @@ class Database:
         # Create instance of Session object
         self.session = Session()
 
-    def output_csv(self):
-
-        #join_query = self.session.query(Property).join(SoldHistory)
-        #joined_table = self.session.execute(join_query).all()
-
-        # for prop, sold in self.session.query(Property).join(SoldHistory).filter(Property.address==SoldHistory.address).all():
-        #     print(prop)
-        #     print(sold)
-
-        # with open('dump.csv', 'wb') as out_file:
-        #     out_csv = csv.writer(out_file)
-        #     out_csv.writerow(joined_table.keys())
-        #     out_csv.writerows(joined_table)
-
-        # table = Table('Sold History', meta, autoload=True, autoload_with=self.engine)
-        # print(table)
-
-        #for prop, sold in self.session.query(Property, SoldHistory).filter(Property.address==SoldHistory.address).all():
+    def output_excel(self):
+        # Define column headings and create empty df to store queried data
         cols = ['Address', 'Suburb', 'Price', 'Date Sold', 'Land_Size', 'Bedrooms', 'Bathrooms', 'Car_Spaces', 'Property_Type']
         export_df = pandas.DataFrame(columns=cols)
 
+        # Get joined SoldHistory and Property data, append one row at a time to df
+        # TODO probably a more efficient way to do this, but its not too slow
         for prop in self.session.query(SoldHistory).join(Property).all():
             data = {'Address': prop.property.address,
                     'Suburb': prop.property.suburb,
@@ -158,4 +144,4 @@ class CurrentListings(Base):
 
 if __name__ == '__main__':
     db = Database()
-    db.output_csv()
+    db.output_excel()

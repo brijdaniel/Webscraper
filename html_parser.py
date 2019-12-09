@@ -124,7 +124,7 @@ class HTMLParser:
             price = int(re.sub(r'[^\d.]', '', price))
             # If sold price is given as a range, eg '$1,250,000 - $1,500,000' then above expression will return
             # '12500001500000', so assert we are getting reaslistic data, otherwise discard
-            assert price < 9999999
+            assert 100000 < price < 9999999
         # If something is wrong with the price data then we discard this property
         except (AttributeError, ValueError, TypeError, AssertionError):
             return None

@@ -2,17 +2,32 @@
 Main interface for executing webscraper and building SQLite database.
 """
 import datetime
-from multiprocessing import Pool
+import os
+import multiprocessing
+import pandas
 from sqlalchemy.exc import IntegrityError
 import html_parser, database_models, scraper, url_generator
 
 
-def gather_data(suburb_url):
+class CacheComplete:
+    def __init__(self):
+        self.cache_df = pandas.DataFrame(columns=['URL', 'Suburb', 'Page', 'Status', 'Timestamp'])
+
+    def append(self, data):
+        self.cache_df = self.cache_df.append(data, index=False)
+
+    def export(self):
+        os.makedirs('Caches', exist_ok=True)
+        cache_path = os.path.join('Caches', str(datetime.datetime.today()) + '.xlsx')
+        self.cache_df.to_excel(cache_path, index=False)
+
+
+def gather_data(suburb_url, cache_object):
     # Unpack suburb from URL for debugging, probably a nicer way to do this
     suburb = (suburb_url.split('in-')[1]).split(',')[0]
 
     # Iterate through 50 pages of search results
-    # TODO changed this from 50 to 2 just for debugging, change back !!!
+    # TODO changed this from 50 to 3 just for debugging, change back !!!
     for page in range(1, 3 + 1):
         # URL to scrape
         url = suburb_url + str(page)
@@ -25,6 +40,17 @@ def gather_data(suburb_url):
         # Parse data
         parser = html_parser.HTMLParser(source_html)
         property_df, sold_df = parser.parse_data('sold')
+
+        # Data to send to cache
+        cache_data = {'URL': suburb_url,
+                      'Suburb': suburb,
+                      'Page': page,
+                      'Timestamp': datetime.datetime.now()}
+        if not property_df.empty or sold_df.empty:
+            cache_data['Status'] = 'Successful'
+        else:
+            cache_data['Status'] = 'Failed'
+        cache_object.append(cache_data)
 
         return property_df, sold_df
 
@@ -62,28 +88,48 @@ if __name__ == '__main__':
     # Chop off suburbs we have done previously
     url_list = url_list[:4]
 
-    # Initilaise list to store tuples of dataframes
-    df_list = []
-
-    # Create pool of 4 processes
-    pool = Pool(4)
-
-    # Map list of URLs to 4 processes, execute build database
-    # This will go through the list sequentially, rather than randomly
-    df_list.append(pool.map(gather_data, url_list))
+    # Create cache object
+    cache = CacheComplete()
 
     # Create session for SQLite database
-    # TODO handle db connections properly, initialise db object and pass as args to starmap
-    #  then close connection at end of job
     database_name = 'realestate_database.db'
     db = database_models.Database(database_name=database_name)
 
-    # Append dataframes to database
-    for df_tuple in df_list:
-        build_database(db, df_tuple[0], df_tuple[1], 'sold')
+    try:
+        # Map list of URLs to max number of processes, execute build database
+        # This will go through the list sequentially, rather than randomly
+        with multiprocessing.Pool(multiprocessing.cpu_count()) as pool:
+            property_results, sold_results = pool.map(gather_data, url_list)
 
-    # Kill database session
-    db.engine.dispose()
+        # Concatenate list of df results into single df
+        property_df = pandas.concat(property_results)
+        sold_df = pandas.concat(sold_results)
+
+        # Append dataframes to database
+        build_database(db, property_df, sold_df, 'sold')
+
+        # Kill database session
+        db.engine.dispose()
+
+        # Export completed data to cache file
+        cache.export()
+
+    # If something fails, save the data we have
+    # TODO not sure if this will actually work. If an exception is raised during the multiprocessing,
+    #  will the contents of *_results survive through to this finally??
+    finally:
+        # Concatenate list of df results into single df
+        property_df = pandas.concat(property_results)
+        sold_df = pandas.concat(sold_results)
+
+        # Append dataframes to database
+        build_database(db, property_df, sold_df, 'sold')
+
+        # Kill database session
+        db.engine.dispose()
+
+        # Make sure cache file is still created if process fails
+        cache.export()
 
 
 
@@ -96,4 +142,3 @@ if __name__ == '__main__':
     #  stopped at Forestille, Marlseton, Fullarton, Mile End
     #  Error at Walkerville selenium.common.exceptions.WebDriverException: Message: Reached error page: about:neterror?e=dnsNotFound&u=https%3A//www.realestate.com.au/sold/in-Elizabeth+Downs%2C+sa/list-39&c=UTF-8&f=regular&d=We%20can%E2%80%99t%20connect%20to%20the%20server%20at%20www.realestate.com.au.
     #  selenium.common.exceptions.WebDriverException: Message: Reached error page: about:neterror?e=dnsNotFound&u=https%3A//www.realestate.com.au/sold/in-Elizabeth+Downs%2C+sa/list-39&c=UTF-8&f=regular&d=We%20can%E2%80%99t%20connect%20to%20the%20server%20at%20www.realestate.com.au.
-
