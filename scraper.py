@@ -23,11 +23,12 @@ def scrape(url):
 
     # Load geckodriver for firefox. Requires geckodriver current working directory
     firefox_options = Options()
-    firefox_options.add_argument('--headless')
+    #firefox_options.add_argument('--headless')
     driver = webdriver.Firefox(firefox_options=firefox_options, executable_path='./geckodriver.exe', firefox_profile=profile)
 
     # Make GET request
     driver.get(url)
+    sleep(10)  # TODO put wait in here to wait for page to load
 
     # Get source HTML
     source_html = driver.page_source

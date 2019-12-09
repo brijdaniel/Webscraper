@@ -4,22 +4,30 @@ Main interface for executing webscraper and building SQLite database.
 import datetime
 import os
 import multiprocessing
+from itertools import repeat
 import pandas
 from sqlalchemy.exc import IntegrityError
 import html_parser, database_models, scraper, url_generator
 
 
-class CacheComplete:
+class CacheCompleted:
+    # TODO not sure if this object needs to be created with multiprocessing.Manager ???
     def __init__(self):
-        self.cache_df = pandas.DataFrame(columns=['URL', 'Suburb', 'Page', 'Status', 'Timestamp'])
+        # Create empty dataframe for storing log data
+        self.log_df = pandas.DataFrame(columns=['URL', 'Suburb', 'Page', 'Status', 'Timestamp'])
 
-    def append(self, data):
-        self.cache_df = self.cache_df.append(data, index=False)
+        # Create lists that can be shared between processes
+        manager = multiprocessing.Manager()
+        self.property_results = manager.list()
+        self.sold_results = manager.list()
 
-    def export(self):
+    def log_append(self, data):
+        self.log_df = self.log_df.append(data, ignore_index=True)
+
+    def log_export(self):
         os.makedirs('Caches', exist_ok=True)
-        cache_path = os.path.join('Caches', str(datetime.datetime.today()) + '.xlsx')
-        self.cache_df.to_excel(cache_path, index=False)
+        cache_path = os.path.join('Caches', str(datetime.datetime.today().date()) + '.xlsx')
+        self.log_df.to_excel(cache_path, index=False)
 
 
 def gather_data(suburb_url, cache_object):
@@ -41,18 +49,20 @@ def gather_data(suburb_url, cache_object):
         parser = html_parser.HTMLParser(source_html)
         property_df, sold_df = parser.parse_data('sold')
 
-        # Data to send to cache
+        # Cache results
+        cache_object.property_results.append(property_df)
+        cache_object.sold_results.append(sold_df)
+
+        # Cache log data
         cache_data = {'URL': suburb_url,
                       'Suburb': suburb,
                       'Page': page,
                       'Timestamp': datetime.datetime.now()}
-        if not property_df.empty or sold_df.empty:
+        if not property_df.empty or not sold_df.empty:
             cache_data['Status'] = 'Successful'
         else:
             cache_data['Status'] = 'Failed'
-        cache_object.append(cache_data)
-
-        return property_df, sold_df
+        cache_object.log_append(cache_data)
 
 
 def build_database(db_session, property_df, secondary_df, *args):
@@ -89,7 +99,7 @@ if __name__ == '__main__':
     url_list = url_list[:4]
 
     # Create cache object
-    cache = CacheComplete()
+    cache = CacheCompleted()
 
     # Create session for SQLite database
     database_name = 'realestate_database.db'
@@ -99,37 +109,22 @@ if __name__ == '__main__':
         # Map list of URLs to max number of processes, execute build database
         # This will go through the list sequentially, rather than randomly
         with multiprocessing.Pool(multiprocessing.cpu_count()) as pool:
-            property_results, sold_results = pool.map(gather_data, url_list)
-
-        # Concatenate list of df results into single df
-        property_df = pandas.concat(property_results)
-        sold_df = pandas.concat(sold_results)
-
-        # Append dataframes to database
-        build_database(db, property_df, sold_df, 'sold')
-
-        # Kill database session
-        db.engine.dispose()
-
-        # Export completed data to cache file
-        cache.export()
+            pool.starmap(gather_data, zip(url_list, repeat(cache)))
 
     # If something fails, save the data we have
-    # TODO not sure if this will actually work. If an exception is raised during the multiprocessing,
-    #  will the contents of *_results survive through to this finally??
     finally:
         # Concatenate list of df results into single df
-        property_df = pandas.concat(property_results)
-        sold_df = pandas.concat(sold_results)
+        property_results_df = pandas.concat(cache.property_results)
+        sold_results_df = pandas.concat(cache.sold_results)
 
         # Append dataframes to database
-        build_database(db, property_df, sold_df, 'sold')
+        build_database(db, property_results_df, sold_results_df, 'sold')
 
         # Kill database session
         db.engine.dispose()
 
         # Make sure cache file is still created if process fails
-        cache.export()
+        cache.log_export()
 
 
 
