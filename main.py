@@ -10,27 +10,9 @@ from sqlalchemy.exc import IntegrityError
 import html_parser, database_models, scraper, url_generator
 
 
-class CacheCompleted:
-    # TODO not sure if this object needs to be created with multiprocessing.Manager ???
-    def __init__(self):
-        # Create empty dataframe for storing log data
-        self.log_df = pandas.DataFrame(columns=['URL', 'Suburb', 'Page', 'Status', 'Timestamp'])
+def gather_data(suburb_url, data_type, property_cache, secondary_cache, log_cache):
+    # TODO sold_cache should really be secondary_cache, and there should be another arg for data_type='sold'
 
-        # Create lists that can be shared between processes
-        manager = multiprocessing.Manager()
-        self.property_results = manager.list()
-        self.sold_results = manager.list()
-
-    def log_append(self, data):
-        self.log_df = self.log_df.append(data, ignore_index=True)
-
-    def log_export(self):
-        os.makedirs('Caches', exist_ok=True)
-        cache_path = os.path.join('Caches', str(datetime.datetime.today().date()) + '.xlsx')
-        self.log_df.to_excel(cache_path, index=False)
-
-
-def gather_data(suburb_url, cache_object):
     # Unpack suburb from URL for debugging, probably a nicer way to do this
     suburb = (suburb_url.split('in-')[1]).split(',')[0]
 
@@ -47,22 +29,22 @@ def gather_data(suburb_url, cache_object):
 
         # Parse data
         parser = html_parser.HTMLParser(source_html)
-        property_df, sold_df = parser.parse_data('sold')
+        property_df, secondary_df = parser.parse_data(data_type)
 
         # Cache results
-        cache_object.property_results.append(property_df)
-        cache_object.sold_results.append(sold_df)
+        property_cache.append(property_df)
+        secondary_cache.append(secondary_df)
 
         # Cache log data
         cache_data = {'URL': suburb_url,
                       'Suburb': suburb,
                       'Page': page,
                       'Timestamp': datetime.datetime.now()}
-        if not property_df.empty or not sold_df.empty:
+        if not property_df.empty or not secondary_df.empty:
             cache_data['Status'] = 'Successful'
         else:
             cache_data['Status'] = 'Failed'
-        cache_object.log_append(cache_data)
+        log_cache.append(cache_data)
 
 
 def build_database(db_session, property_df, secondary_df, *args):
@@ -92,39 +74,57 @@ def build_database(db_session, property_df, secondary_df, *args):
 
 
 if __name__ == '__main__':
+    # Specify the data type we are collecting
+    data_collected = 'sold'
+
     # Get list of sold suburb URLs
-    url_list = url_generator.create_url_list('sold')
+    url_list = url_generator.create_url_list(data_collected)
 
     # Chop off suburbs we have done previously
     url_list = url_list[:4]
-
-    # Create cache object
-    cache = CacheCompleted()
 
     # Create session for SQLite database
     database_name = 'realestate_database.db'
     db = database_models.Database(database_name=database_name)
 
-    try:
-        # Map list of URLs to max number of processes, execute build database
-        # This will go through the list sequentially, rather than randomly
-        with multiprocessing.Pool(multiprocessing.cpu_count()) as pool:
-            pool.starmap(gather_data, zip(url_list, repeat(cache)))
+    # Dataframe to store log data in
+    log_df = pandas.DataFrame(columns=['URL', 'Suburb', 'Page', 'Status', 'Timestamp'])
 
-    # If something fails, save the data we have
-    finally:
-        # Concatenate list of df results into single df
-        property_results_df = pandas.concat(cache.property_results)
-        sold_results_df = pandas.concat(cache.sold_results)
+    # Initialise multiprocessing lock manager and lists to cache data
+    with multiprocessing.Manager() as manager:
+        log_scraped = manager.list()
 
-        # Append dataframes to database
-        build_database(db, property_results_df, sold_results_df, 'sold')
+        property_results = manager.list()
+        secondary_results = manager.list()
 
-        # Kill database session
-        db.engine.dispose()
+        try:
+            # Map list of URLs to max number of processes, execute build database
+            # This will go through the list sequentially, rather than randomly
+            with multiprocessing.Pool(multiprocessing.cpu_count()) as pool:
+                pool.starmap(gather_data, zip(url_list, repeat(data_collected), repeat(property_results), repeat(secondary_results), repeat(log_scraped)))
 
-        # Make sure cache file is still created if process fails
-        cache.log_export()
+        # If something fails, save the data we have
+        finally:
+            # Concatenate list of dfs into single df
+            property_results_df = pandas.concat(property_results)
+            secondary_results_df = pandas.concat(secondary_results)
+
+            # TODO could save these dataframes out to a file too
+
+            # Append dataframes to database
+            print('Appending ' + str(len(secondary_results_df.index)) + ' rows of gathered data to database')
+            build_database(db, property_results_df, secondary_results_df, data_collected)
+
+            # Kill database session
+            db.engine.dispose()
+
+            # Make sure log file is still created if process fails
+            log_scraped = list(log_scraped)
+            log_df = pandas.DataFrame(log_scraped)
+            os.makedirs('Caches', exist_ok=True)
+            log_path = os.path.join('Caches', str(datetime.datetime.today().date()) + '.xlsx')
+            log_df.to_excel(log_path, index=False)
+            print('Creating log file for this run')
 
 
 

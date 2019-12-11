@@ -5,3 +5,5 @@ phantomjs-2.1.1-windows/
 *.log
 *.html
 /realestate_database_original.db
+Logs/
+Caches/
