@@ -109,7 +109,13 @@ if __name__ == '__main__':
             property_results_df = pandas.concat(property_results)
             secondary_results_df = pandas.concat(secondary_results)
 
-            # TODO could save these dataframes out to a file too
+            # Back these dataframes up to cache files too
+            os.makedirs('Caches', exist_ok=True)
+            property_path = os.path.join('Caches', str(datetime.datetime.today().date()) + '_property.xlsx')
+            secondary_path = os.path.join('Caches', str(datetime.datetime.today().date()) + '_' + data_collected + '.xlsx')
+            property_results_df.to_excel(property_path, index=False)
+            secondary_results_df.to_excel(secondary_path, index=False)
+            print('Caching data gathered for this run to spreadsheets')
 
             # Append dataframes to database
             print('Appending ' + str(len(secondary_results_df.index)) + ' rows of gathered data to database')
@@ -121,8 +127,8 @@ if __name__ == '__main__':
             # Make sure log file is still created if process fails
             log_scraped = list(log_scraped)
             log_df = pandas.DataFrame(log_scraped)
-            os.makedirs('Caches', exist_ok=True)
-            log_path = os.path.join('Caches', str(datetime.datetime.today().date()) + '.xlsx')
+            os.makedirs('Logs', exist_ok=True)
+            log_path = os.path.join('Logs', str(datetime.datetime.today().date()) + '.xlsx')
             log_df.to_excel(log_path, index=False)
             print('Creating log file for this run')
 
