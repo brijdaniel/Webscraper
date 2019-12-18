@@ -31,6 +31,12 @@ if __name__ == '__main__':
             parser = html_parser.HTMLParser(source_html)
             property_df, sold_df = parser.parse_data('sold')
 
+            if not property_df.empty:
+                print('Page ' + str(page) + ' of ' + suburb + ' scrape SUCCESS')
+            else:
+                print('Page ' + str(page) + ' of ' + suburb + ' scrape FAILED')
+                continue
+
             # Create engine for SQLite database
             database_name = 'realestate_database.db'
             db = database_models.Database(database_name=database_name)
