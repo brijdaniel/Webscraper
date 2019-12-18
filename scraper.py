@@ -17,7 +17,7 @@ def scrape(url):
 
     # Set up basic firefox profile
     profile = webdriver.FirefoxProfile()
-    profile.set_preference("general.useragent.override","Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:71.0) Gecko/20100101 Firefox/70.0")
+    profile.set_preference("general.useragent.override", "Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:71.0) Gecko/20100101 Firefox/70.0")
     profile.set_preference("browser.privatebrowsing.autostart", True)
     profile.update_preferences()
 
@@ -29,6 +29,9 @@ def scrape(url):
     # Make GET request
     driver.get(url)
     sleep(5)  # TODO put wait in here to wait for page to load
+    # 'tiered-results tiered results--exact'
+
+
 
     # Get source HTML
     source_html = driver.page_source
@@ -37,4 +40,4 @@ def scrape(url):
     driver.quit()
 
     # Return source HTML
-    return  source_html
+    return source_html

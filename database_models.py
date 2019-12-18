@@ -1,6 +1,5 @@
 """
 Define classes used for SQLite database construction.
-TODO Need to convert SQLite database to MySQL for multiprocessing
 """
 
 import pandas

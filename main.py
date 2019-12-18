@@ -42,8 +42,10 @@ def gather_data(suburb_url, data_type, property_cache, secondary_cache, log_cach
                       'Timestamp': datetime.datetime.now()}
         if not property_df.empty or not secondary_df.empty:
             cache_data['Status'] = 'Successful'
+            print('Page ' + str(page) + ' of ' + suburb + '... SUCCESS')
         else:
             cache_data['Status'] = 'Failed'
+            print('Page ' + str(page) + ' of ' + suburb + '... FAILED')
         log_cache.append(cache_data)
 
 
