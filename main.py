@@ -111,12 +111,14 @@ if __name__ == '__main__':
             property_results_df = pandas.concat(property_results)
             secondary_results_df = pandas.concat(secondary_results)
 
-            # Back these dataframes up to cache files too
+            # Back up these dataframes to cache files, as long as they're not empty
             os.makedirs('Caches', exist_ok=True)
             property_path = os.path.join('Caches', str(datetime.datetime.today().date()) + '_property.xlsx')
             secondary_path = os.path.join('Caches', str(datetime.datetime.today().date()) + '_' + data_collected + '.xlsx')
-            property_results_df.to_excel(property_path, index=False)
-            secondary_results_df.to_excel(secondary_path, index=False)
+            if not property_results_df.empty:
+                property_results_df.to_excel(property_path, index=False)
+            if not secondary_results_df.empty:
+                secondary_results_df.to_excel(secondary_path, index=False)
             print('Caching data gathered for this run to spreadsheets')
 
             # Append dataframes to database

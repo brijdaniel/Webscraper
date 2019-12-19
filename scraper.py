@@ -31,8 +31,6 @@ def scrape(url):
     sleep(5)  # TODO put wait in here to wait for page to load
     # 'tiered-results tiered results--exact'
 
-
-
     # Get source HTML
     source_html = driver.page_source
 
