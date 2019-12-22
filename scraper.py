@@ -1,10 +1,10 @@
 """
 Web scraper engine to extract source html for input to html_parser().
 """
-
 from time import sleep
 from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.chrome.options import Options
+from fake_useragent import UserAgent
 
 
 def scrape(url):
@@ -15,21 +15,27 @@ def scrape(url):
     :return: Source HTML of web page
     """
 
-    # Set up basic firefox profile
-    profile = webdriver.FirefoxProfile()
-    profile.set_preference("general.useragent.override", "Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:71.0) Gecko/20100101 Firefox/70.0")
-    profile.set_preference("browser.privatebrowsing.autostart", True)
-    profile.update_preferences()
+    # Set up random fake user agent
+    ua = UserAgent()
+    user_agent = ua.random
 
-    # Load geckodriver for firefox. Requires geckodriver current working directory
-    firefox_options = Options()
-    firefox_options.add_argument('--headless')
-    driver = webdriver.Firefox(firefox_options=firefox_options, executable_path='./geckodriver.exe', firefox_profile=profile)
+    # Set up basic firefox profile
+    chrome_options = Options()
+    chrome_options.add_argument(f'user-agent={user_agent}')
+    chrome_options.add_argument("start-maximized")
+    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    chrome_options.add_experimental_option('useAutomationExtension', False)
+    # chrome_options.add_argument('--headless')
+
+    caps = chrome_options.to_capabilities()
+
+    # Load chrome driver
+    driver = webdriver.Chrome(executable_path='./chromedriver.exe', options=chrome_options, desired_capabilities=caps)
 
     # Make GET request
     driver.get(url)
-    sleep(5)  # TODO put wait in here to wait for page to load
     # 'tiered-results tiered results--exact'
+    sleep(5)
 
     # Get source HTML
     source_html = driver.page_source
