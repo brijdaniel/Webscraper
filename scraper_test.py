@@ -12,11 +12,14 @@ user_agent = ua.random
 
 # Set up basic firefox profile
 chrome_options = Options()
+chrome_options.add_argument('--headless')
+chrome_options.add_argument('--disable-infobars')
+chrome_options.add_argument("--disable-extensions")
+chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument(f'user-agent={user_agent}')
 chrome_options.add_argument("start-maximized")
 chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
 chrome_options.add_experimental_option('useAutomationExtension', False)
-#chrome_options.add_argument('--headless')
 
 caps = chrome_options.to_capabilities()
 

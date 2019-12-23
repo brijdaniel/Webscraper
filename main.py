@@ -18,7 +18,7 @@ def gather_data(suburb_url, data_type, property_cache, secondary_cache, log_cach
 
     # Iterate through 50 pages of search results
     # TODO changed this from 50 to 3 just for debugging, change back !!!
-    for page in range(1, 3 + 1):
+    for page in range(1, 50 + 1):
         # URL to scrape
         url = suburb_url + str(page)
 
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     url_list = url_generator.create_url_list(data_collected)
 
     # Chop off suburbs we have done previously
-    url_list = url_list[:4]
+    #url_list = url_list[:4]
 
     # Create session for SQLite database
     database_name = 'realestate_database.db'

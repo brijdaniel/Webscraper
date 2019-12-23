@@ -73,8 +73,9 @@ class HTMLParser:
 
         # Find land size, bedrooms, bathrooms, car spaces and property type if given
         try:
-            # Convert from 'bs4.element.NavigableString' to int
-            land_size = int(property_data.find('span', attrs={'class': 'property-size__icon property-size__building'}).contents[0])
+            # Convert from 'bs4.element.NavigableString' to int, removing commas in str
+            land_size = property_data.find('span', attrs={'class': re.compile('property-size__icon property-size.*')}).contents[0]
+            land_size = int(land_size.replace(',', ''))
         except (AttributeError, ValueError, TypeError):
             land_size = numpy.NaN
         try:
