@@ -68,7 +68,7 @@ class HTMLParser:
         # Find address and suburb. Note suburb is left in the address string too to ensure addresses are unique,
         # and can therefore be used as the primary key for each table in the database
         # .contents extracts the price as a list of length 1, so [0] accesses the actual value
-        address = property_data.find('span', attrs={'class': ''}).contents[0]
+        address = str(property_data.find('span', attrs={'class': ''}).contents[0])
         suburb = address.split(', ')[-1]
 
         # Find land size, bedrooms, bathrooms, car spaces and property type if given
@@ -93,7 +93,7 @@ class HTMLParser:
         except (AttributeError, ValueError, TypeError):
             car_spaces = numpy.NaN
         try:
-            property_type = property_data.find('span', attrs={'class': 'residential-card__property-type'}).contents[0]
+            property_type = str(property_data.find('span', attrs={'class': 'residential-card__property-type'}).contents[0])
         except (AttributeError, ValueError, TypeError):
             property_type = numpy.NaN
 
