@@ -29,3 +29,31 @@ def create_url_list(search_type):
         url_list.append(combined_url)
 
     return url_list
+
+
+def filter_list(url_list, log_date_tuple):
+    """
+    Takes in list from create_url_list and filters against the log file from a previous scraping run. Returns a
+    filtered list of URLs of suburbs which haven't been fully scraped.
+
+    :param url_list: List output from create_url_list()
+    :param log_date_tuple: Tuple of log file names to filter URLs against
+    :return: Filtered list of URLs
+    """
+
+    # Unpack tuple into single dataframe
+    log_df = pandas.DataFrame()
+    for log in log_date_tuple:
+        log_data = pandas.read_excel('Logs/' + log)
+        log_df = log_df.append(log_data)
+
+    # Filter down to suburbs that had a successful 50th page, ie have been completely scraped
+    log_df = log_df[log_df['Page']==50]
+
+    # Get the URLs of these suburbs
+    url_to_filter = list(log_df['URL'])
+
+    # Filter the input URL list
+    filtered_urls = [url for url in url_list if url not in url_to_filter]
+
+    return filtered_urls

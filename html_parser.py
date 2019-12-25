@@ -75,22 +75,20 @@ class HTMLParser:
         try:
             # Convert from 'bs4.element.NavigableString' to int, removing commas in str
             land_size = property_data.find('span', attrs={'class': re.compile('property-size__icon property-size.*')}).contents[0]
-            land_size = int(land_size.replace(',', ''))
+            land_size = float(land_size.replace(',', ''))
+            land_size = int(round(land_size))
         except (AttributeError, ValueError, TypeError):
             land_size = numpy.NaN
         try:
-            bedrooms = int(property_data.find('span', attrs={
-                'class': 'general-features__icon general-features__beds'}).contents[0])
+            bedrooms = int(property_data.find('span', attrs={'class': 'general-features__icon general-features__beds'}).contents[0])
         except (AttributeError, ValueError, TypeError):
             bedrooms = numpy.NaN
         try:
-            bathrooms = int(property_data.find('span', attrs={
-                'class': 'general-features__icon general-features__baths'}).contents[0])
+            bathrooms = int(property_data.find('span', attrs={'class': 'general-features__icon general-features__baths'}).contents[0])
         except (AttributeError, ValueError, TypeError):
             bathrooms = numpy.NaN
         try:
-            car_spaces = int(property_data.find('span', attrs={
-                'class': 'general-features__icon general-features__cars'}).contents[0])
+            car_spaces = int(property_data.find('span', attrs={'class': 'general-features__icon general-features__cars'}).contents[0])
         except (AttributeError, ValueError, TypeError):
             car_spaces = numpy.NaN
         try:

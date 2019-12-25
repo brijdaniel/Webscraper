@@ -1,6 +1,7 @@
 """
 Main interface for executing webscraper and building SQLite database.
 """
+import time
 import datetime
 import os
 import multiprocessing
@@ -16,8 +17,10 @@ def gather_data(suburb_url, data_type, property_cache, secondary_cache, log_cach
     # Unpack suburb from URL for debugging, probably a nicer way to do this
     suburb = (suburb_url.split('in-')[1]).split(',')[0]
 
+    # Create scraper instance, ie open browser
+    browser = scraper.Scraper()
+
     # Iterate through 50 pages of search results
-    # TODO changed this from 50 to 3 just for debugging, change back !!!
     for page in range(1, 50 + 1):
         # URL to scrape
         url = suburb_url + str(page)
@@ -25,11 +28,12 @@ def gather_data(suburb_url, data_type, property_cache, secondary_cache, log_cach
         print('Scraping page ' + str(page) + ' of ' + suburb + ' at ' + str(datetime.datetime.now()))
 
         # Get URL source HTML
-        source_html = scraper.scrape(url)
+        source_html = browser.scrape(url)
 
         # Parse data
         parser = html_parser.HTMLParser(source_html)
         property_df, secondary_df = parser.parse_data(data_type)
+        time.sleep(1)
 
         # Cache results
         property_cache.append(property_df)
@@ -47,6 +51,9 @@ def gather_data(suburb_url, data_type, property_cache, secondary_cache, log_cach
             cache_data['Status'] = 'Failed'
             print('Page ' + str(page) + ' of ' + suburb + '... FAILED')
         log_cache.append(cache_data)
+
+    # After scraping 50 pages of this suburb, close the browser
+    browser.close()
 
 
 def build_database(db_session, property_df, secondary_df, *args):
@@ -82,8 +89,11 @@ if __name__ == '__main__':
     # Get list of sold suburb URLs
     url_list = url_generator.create_url_list(data_collected)
 
-    # Chop off suburbs we have done previously
-    #url_list = url_list[:4]
+    # Filter out suburbs which were recently scraped based on log file
+    # TODO could make this just gather all files in the log folder and build the tuple automatically
+    url_list = url_generator.filter_list(url_list, ('2019-12-24-12PM.xlsx', '2019-12-24-3AM.xlsx'))
+
+    print(str(len(url_list)) + ' suburbs to go')
 
     # Create session for SQLite database
     database_name = 'realestate_database.db'
@@ -113,8 +123,8 @@ if __name__ == '__main__':
 
             # Back up these dataframes to cache files, as long as they're not empty
             os.makedirs('Caches', exist_ok=True)
-            property_path = os.path.join('Caches', str(datetime.datetime.today().date()) + '_property.xlsx')
-            secondary_path = os.path.join('Caches', str(datetime.datetime.today().date()) + '_' + data_collected + '.xlsx')
+            property_path = os.path.join('Caches', str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")) + '_property.xlsx')
+            secondary_path = os.path.join('Caches', str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")) + '_' + data_collected + '.xlsx')
             if not property_results_df.empty:
                 property_results_df.to_excel(property_path, index=False)
             if not secondary_results_df.empty:
@@ -132,18 +142,6 @@ if __name__ == '__main__':
             log_scraped = list(log_scraped)
             log_df = pandas.DataFrame(log_scraped)
             os.makedirs('Logs', exist_ok=True)
-            log_path = os.path.join('Logs', str(datetime.datetime.today().date()) + '.xlsx')
+            log_path = os.path.join('Logs', str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")) + '.xlsx')
             log_df.to_excel(log_path, index=False)
             print('Creating log file for this run')
-
-
-
-
-
-
-
-
-    # TODO Got up to Beverley (43 in list), half of Hectorville needs doing, as well as Adelaide and North Adelaide
-    #  stopped at Forestille, Marlseton, Fullarton, Mile End
-    #  Error at Walkerville selenium.common.exceptions.WebDriverException: Message: Reached error page: about:neterror?e=dnsNotFound&u=https%3A//www.realestate.com.au/sold/in-Elizabeth+Downs%2C+sa/list-39&c=UTF-8&f=regular&d=We%20can%E2%80%99t%20connect%20to%20the%20server%20at%20www.realestate.com.au.
-    #  selenium.common.exceptions.WebDriverException: Message: Reached error page: about:neterror?e=dnsNotFound&u=https%3A//www.realestate.com.au/sold/in-Elizabeth+Downs%2C+sa/list-39&c=UTF-8&f=regular&d=We%20can%E2%80%99t%20connect%20to%20the%20server%20at%20www.realestate.com.au.
