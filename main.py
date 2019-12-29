@@ -91,7 +91,15 @@ if __name__ == '__main__':
 
     # Filter out suburbs which were recently scraped based on log file
     # TODO could make this just gather all files in the log folder and build the tuple automatically
-    url_list = url_generator.filter_list(url_list, ('2019-12-24-12PM.xlsx', '2019-12-24-3AM.xlsx'))
+    url_list = url_generator.filter_list(url_list, ('2019-12-29-10-03.xlsx',
+                                                    '2019-12-29-01-51.xlsx',
+                                                    '2019-12-28-13-29.xlsx',
+                                                    '2019-12-27-05-10.xlsx',
+                                                    '2019-12-26-15-13.xlsx',
+                                                    '2019-12-26-12-04.xlsx',
+                                                    '2019-12-26-01-36.xlsx',
+                                                    '2019-12-24-12PM.xlsx',
+                                                    '2019-12-24-3AM.xlsx'))
 
     print(str(len(url_list)) + ' suburbs to go')
 
