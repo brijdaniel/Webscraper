@@ -6,7 +6,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
-from fake_useragent import UserAgent
+#from fake_useragent import UserAgent
 
 
 class Scraper:
@@ -17,13 +17,13 @@ class Scraper:
         """
 
         # Set up random fake user agent
-        ua = UserAgent()
-        user_agent = ua.random
+        # ua = UserAgent()
+        # user_agent = ua.random
 
         # Set up basic firefox profile
         chrome_options = Options()
         # chrome_options.add_argument('--headless')
-        chrome_options.add_argument(f'user-agent={user_agent}')
+        #chrome_options.add_argument(f'user-agent={user_agent}')
         chrome_options.add_argument("start-maximized")
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
         chrome_options.add_experimental_option('useAutomationExtension', False)

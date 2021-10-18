@@ -11,7 +11,7 @@ from sqlalchemy.exc import IntegrityError
 import html_parser, database_models, scraper, url_generator
 
 
-def gather_data(suburb_url, data_type, property_cache, secondary_cache, log_cache):
+def gather_data(suburb_url, data_type, property_cache, secondary_cache, log_cache, from_date=None):
     # TODO sold_cache should really be secondary_cache, and there should be another arg for data_type='sold'
 
     # Unpack suburb from URL for debugging, probably a nicer way to do this
@@ -22,8 +22,14 @@ def gather_data(suburb_url, data_type, property_cache, secondary_cache, log_cach
 
     # Iterate through 50 pages of search results
     for page in range(1, 50 + 1):
+        # Check if the last sold date captured is before the date we want to scrape back to, if it is then stop
+        if from_date and page > 1:
+            last_sold_date = secondary_df.tail(1)['Date_Sold']
+            if last_sold_date < from_date:
+                break
+
         # URL to scrape
-        url = suburb_url + str(page)
+        url = suburb_url + str(page) + '?activeSort=solddate'
 
         print('Scraping page ' + str(page) + ' of ' + suburb + ' at ' + str(datetime.datetime.now()))
 
@@ -86,20 +92,15 @@ if __name__ == '__main__':
     # Specify the data type we are collecting
     data_collected = 'sold'
 
+    # What date do we want to scrape back to
+    scrape_to = datetime.datetime.strptime('2019-12-10', '%Y-%m-%d').date()
+
     # Get list of sold suburb URLs
     url_list = url_generator.create_url_list(data_collected)
 
-    # Filter out suburbs which were recently scraped based on log file
+    # Filter out suburbs which were recently scraped based on log files
     # TODO could make this just gather all files in the log folder and build the tuple automatically
-    url_list = url_generator.filter_list(url_list, ('2019-12-29-10-03.xlsx',
-                                                    '2019-12-29-01-51.xlsx',
-                                                    '2019-12-28-13-29.xlsx',
-                                                    '2019-12-27-05-10.xlsx',
-                                                    '2019-12-26-15-13.xlsx',
-                                                    '2019-12-26-12-04.xlsx',
-                                                    '2019-12-26-01-36.xlsx',
-                                                    '2019-12-24-12PM.xlsx',
-                                                    '2019-12-24-3AM.xlsx'))
+    # url_list = url_generator.filter_list(url_list, ('2019-12-29-10-03.xlsx'))
 
     print(str(len(url_list)) + ' suburbs to go')
 
@@ -121,7 +122,8 @@ if __name__ == '__main__':
             # Map list of URLs to max number of processes, execute build database
             # This will go through the list sequentially, rather than randomly
             with multiprocessing.Pool(multiprocessing.cpu_count()) as pool:
-                pool.starmap(gather_data, zip(url_list, repeat(data_collected), repeat(property_results), repeat(secondary_results), repeat(log_scraped)))
+                pool.starmap(gather_data, zip(url_list, repeat(data_collected), repeat(property_results),
+                                              repeat(secondary_results), repeat(log_scraped), repeat(scrape_to)))
 
         # If something fails, save the data we have
         finally:
